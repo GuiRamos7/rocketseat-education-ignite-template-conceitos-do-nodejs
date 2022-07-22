@@ -24,6 +24,20 @@ function checksExistsUserAccount(request, response, next) {
   return next();
 }
 
+function checksExistsTodoOnUser(request, response, next) {
+  const { username } = request.headers;
+  const { id } = request.params;
+
+  const user = users.find((user) => user.username === username);
+  const hasTodo = user.todos.some((todo) => todo.id === id);
+
+  if (!hasTodo) {
+    return response.status(400).json({ error: "Todo not found!" });
+  }
+
+  return next();
+}
+
 app.post("/users", (request, response) => {
   const { name, username } = request.body;
 
@@ -74,9 +88,32 @@ app.post("/todos", checksExistsUserAccount, (request, response) => {
   return response.status(201).json(todo);
 });
 
-app.put("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
-});
+app.put(
+  "/todos/:id",
+  checksExistsUserAccount,
+  checksExistsTodoOnUser,
+  (request, response) => {
+    const { username } = request;
+    const { title, deadline } = request.body;
+    const { id } = request.params;
+
+    const user = users.find((user) => user.username === username);
+    const todo = user.todos.filter((td) => td.id === id).pop();
+    const todoWithoutEditable = user.todos.filter((td) => td.id !== id);
+
+    const newTodo = {
+      title,
+      deadline: new Date(deadline),
+      id: todo.id,
+      done: todo.done,
+      created_at: todo.created_at,
+    };
+
+    user.todos = [...todoWithoutEditable, newTodo];
+
+    return response.status(201).json(newTodo);
+  }
+);
 
 app.patch("/todos/:id/done", checksExistsUserAccount, (request, response) => {
   // Complete aqui
