@@ -136,8 +136,21 @@ app.patch(
   }
 );
 
-app.delete("/todos/:id", checksExistsUserAccount, (request, response) => {
-  // Complete aqui
-});
+app.delete(
+  "/todos/:id",
+  checksExistsUserAccount,
+  checksExistsTodoOnUser,
+  (request, response) => {
+    const { username } = request;
+    const { id } = request.params;
+
+    const user = users.find((user) => user.username === username);
+    const todoWithoutEditable = user.todos.filter((td) => td.id !== id);
+
+    user.todos = todoWithoutEditable;
+
+    return response.status(204).json(true);
+  }
+);
 
 module.exports = app;
